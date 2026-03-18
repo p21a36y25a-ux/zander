@@ -1,0 +1,29 @@
+{
+  "name": "liana",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HR, Time Attendance and Payroll platform for Kosovo (EUR)",
+  "workspaces": [
+    "packages/backend",
+    "packages/frontend",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace backend & npm run dev --workspace frontend",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace @liana/shared && npm run build --workspace backend && npm run build --workspace frontend",
+    "lint": "npm run lint --workspace backend && npm run lint --workspace frontend",
+    "test": "npm run test --workspace backend"
+  },
+  "keywords": [
+    "hr",
+    "attendance",
+    "payroll",
+    "kosovo",
+    "nestjs",
+    "react"
+  ],
+  "author": "",
+  "license": "MIT"
+}
