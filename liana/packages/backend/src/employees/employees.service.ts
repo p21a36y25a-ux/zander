@@ -35,7 +35,7 @@ export class EmployeesService {
     const user = this.usersRepository.create({
       email: dto.email,
       passwordHash,
-      role: UserRole.EMPLOYEE,
+      role: dto.role ?? UserRole.EMPLOYEE,
       isActive: true,
     });
     const savedUser = await this.usersRepository.save(user);
@@ -69,6 +69,11 @@ export class EmployeesService {
 
     if (dto.email !== undefined && employee.user) {
       employee.user.email = dto.email;
+      await this.usersRepository.save(employee.user);
+    }
+
+    if (dto.role !== undefined && employee.user) {
+      employee.user.role = dto.role;
       await this.usersRepository.save(employee.user);
     }
 

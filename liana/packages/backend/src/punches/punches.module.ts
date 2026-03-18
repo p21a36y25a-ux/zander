@@ -10,6 +10,6 @@ import { PunchesService } from './punches.service';
   imports: [TypeOrmModule.forFeature([PunchEntity]), AttendanceModule],
   providers: [PunchesService, PunchEventsGateway],
   controllers: [PunchesController],
-  exports: [PunchEventsGateway],
+  exports: [PunchEventsGateway, PunchesService],
 })
 export class PunchesModule {}

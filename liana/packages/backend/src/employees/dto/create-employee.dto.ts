@@ -1,4 +1,6 @@
 import { IsDateString, IsEmail, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { UserRole } from '@liana/shared';
+import { IsEnum } from 'class-validator';
 
 export class CreateEmployeeDto {
   @IsString()
@@ -26,4 +28,8 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsString()
   departmentId?: string;
+
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
 }

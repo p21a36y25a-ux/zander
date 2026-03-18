@@ -1,4 +1,6 @@
 import type { PayrollBreakdown, PunchEventPayload } from '@liana/shared'
+import { UserRole } from '@liana/shared'
+import axios from 'axios'
 import { io, type Socket } from 'socket.io-client'
 import { create } from 'zustand'
 import { api } from '../lib/api'
@@ -6,13 +8,30 @@ import { api } from '../lib/api'
 type UserSession = {
   id: string
   email: string
-  role: string
+  role: UserRole
 }
 
 type Employee = {
   id: string
+  employeeNumber?: string
   firstName: string
   lastName: string
+  hourlyRateEur?: string
+  userId?: string
+  user?: {
+    id: string
+    email: string
+    role: UserRole
+    isActive: boolean
+  }
+}
+
+type SystemUser = {
+  id: string
+  email: string
+  role: UserRole
+  isActive: boolean
+  createdAt: string
 }
 
 type Punch = {
@@ -36,6 +55,23 @@ type LeaveRequest = {
   startDate: string
   endDate: string
   status: string
+  reason?: string
+  managerComment?: string | null
+  hrComment?: string | null
+}
+
+type PayrollRecord = {
+  id: string
+  employeeId: string
+  grossAmount: string
+  totalHours: string
+  currency: string
+  calculatedAt: string
+  employee?: {
+    firstName?: string
+    lastName?: string
+    employeeNumber?: string
+  }
 }
 
 type HrStore = {
@@ -45,15 +81,19 @@ type HrStore = {
   punches: Punch[]
   attendance: AttendanceRow[]
   leaveRequests: LeaveRequest[]
+  systemUsers: SystemUser[]
+  payrollRecords: PayrollRecord[]
   payrollPreview: PayrollBreakdown | null
   loading: boolean
   error: string | null
   socket: Socket | null
   login: (payload: { email: string; password: string }) => Promise<void>
+  logout: () => void
   loadEmployees: () => Promise<void>
   loadPunches: () => Promise<void>
   loadAttendance: () => Promise<void>
   loadLeaves: () => Promise<void>
+  loadSystemUsers: () => Promise<void>
   createPunch: (payload: {
     employeeId: string
     type: 'check_in' | 'check_out'
@@ -66,7 +106,27 @@ type HrStore = {
     endDate: string
     reason: string
   }) => Promise<void>
+  reviewLeave: (payload: {
+    requestId: string
+    status: 'approved' | 'rejected'
+    reviewer: 'manager' | 'hr'
+    comment?: string
+  }) => Promise<void>
+  createEmployee: (payload: {
+    employeeNumber: string
+    firstName: string
+    lastName: string
+    email: string
+    password: string
+    hourlyRateEur: number
+    hireDate: string
+    role: UserRole
+  }) => Promise<void>
+  updateEmployee: (id: string, payload: { role?: UserRole; hourlyRateEur?: number }) => Promise<void>
+  removeEmployee: (id: string) => Promise<void>
   calculatePreview: (payload: { totalHours: number; hourlyRateEur: number }) => Promise<void>
+  loadPayrollRecords: () => Promise<void>
+  exportAttendanceCsv: (employeeId?: string) => Promise<void>
   initRealtime: () => () => void
 }
 
@@ -79,6 +139,8 @@ export const useHrStore = create<HrStore>((set, get) => ({
   punches: [],
   attendance: [],
   leaveRequests: [],
+  systemUsers: [],
+  payrollRecords: [],
   payrollPreview: null,
   loading: false,
   error: null,
@@ -92,9 +154,34 @@ export const useHrStore = create<HrStore>((set, get) => ({
       localStorage.setItem('liana_token', accessToken)
       localStorage.setItem('liana_user', JSON.stringify(user))
       set({ token: accessToken, user, loading: false })
-    } catch {
-      set({ loading: false, error: 'Unable to login. Check API availability.' })
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? String(err.response?.data?.message ?? err.message)
+        : 'Unable to login. Check API availability.'
+      set({ loading: false, error: message })
     }
+  },
+
+  logout() {
+    const socket = get().socket
+    if (socket) {
+      socket.disconnect()
+    }
+    localStorage.removeItem('liana_token')
+    localStorage.removeItem('liana_user')
+    set({
+      token: null,
+      user: null,
+      employees: [],
+      punches: [],
+      attendance: [],
+      leaveRequests: [],
+      systemUsers: [],
+      payrollRecords: [],
+      payrollPreview: null,
+      socket: null,
+      error: null,
+    })
   },
 
   async loadEmployees() {
@@ -133,6 +220,15 @@ export const useHrStore = create<HrStore>((set, get) => ({
     }
   },
 
+  async loadSystemUsers() {
+    try {
+      const response = await api.get('/users')
+      set({ systemUsers: response.data })
+    } catch {
+      set({ error: 'Failed to load system users' })
+    }
+  },
+
   async createPunch(payload) {
     try {
       await api.post('/punches', payload)
@@ -154,6 +250,49 @@ export const useHrStore = create<HrStore>((set, get) => ({
     }
   },
 
+  async reviewLeave(payload) {
+    try {
+      const path = payload.reviewer === 'manager' ? 'manager-review' : 'hr-review'
+      await api.patch(`/leaves/requests/${payload.requestId}/${path}`, {
+        status: payload.status,
+        comment: payload.comment,
+      })
+      await get().loadLeaves()
+    } catch {
+      set({ error: 'Failed to review leave request' })
+    }
+  },
+
+  async createEmployee(payload) {
+    try {
+      await api.post('/employees', payload)
+      await Promise.all([get().loadEmployees(), get().loadSystemUsers()])
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? String(err.response?.data?.message ?? err.message)
+        : 'Failed to register user'
+      set({ error: message })
+    }
+  },
+
+  async updateEmployee(id, payload) {
+    try {
+      await api.patch(`/employees/${id}`, payload)
+      await Promise.all([get().loadEmployees(), get().loadSystemUsers()])
+    } catch {
+      set({ error: 'Failed to update employee' })
+    }
+  },
+
+  async removeEmployee(id) {
+    try {
+      await api.delete(`/employees/${id}`)
+      await Promise.all([get().loadEmployees(), get().loadSystemUsers()])
+    } catch {
+      set({ error: 'Failed to remove employee' })
+    }
+  },
+
   async calculatePreview(payload) {
     try {
       const response = await api.post('/payroll/calculate-preview', payload)
@@ -163,13 +302,44 @@ export const useHrStore = create<HrStore>((set, get) => ({
     }
   },
 
+  async loadPayrollRecords() {
+    try {
+      const response = await api.get('/payroll/records')
+      set({ payrollRecords: response.data })
+    } catch {
+      set({ error: 'Failed to load payroll records' })
+    }
+  },
+
+  async exportAttendanceCsv(employeeId?: string) {
+    try {
+      const response = await api.get('/attendance/export/csv', {
+        params: employeeId ? { employeeId } : undefined,
+        responseType: 'blob',
+      })
+
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'attendance-report.csv'
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      set({ error: 'Failed to export attendance CSV' })
+    }
+  },
+
   initRealtime() {
     const existing = get().socket
     if (existing) {
       return () => existing.disconnect()
     }
 
-    const socket = io(import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:3000')
+    const defaultSocketUrl = typeof window === 'undefined' ? undefined : window.location.origin
+    const socket = io(import.meta.env.VITE_SOCKET_URL ?? defaultSocketUrl, {
+      path: '/socket.io',
+    })
     socket.on('punch.created', (payload: PunchEventPayload) => {
       const row: Punch = {
         id: `${payload.employeeId}-${payload.punchedAt}`,

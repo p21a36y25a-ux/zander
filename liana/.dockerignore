@@ -1,0 +1,8 @@
+node_modules
+packages/*/node_modules
+packages/*/dist
+.git
+.github
+.DS_Store
+npm-debug.log
+*.local

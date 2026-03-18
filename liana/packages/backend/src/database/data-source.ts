@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { join } from 'path';
 import { DataSource } from 'typeorm';
 import {
   AttendanceEntity,
@@ -34,6 +35,6 @@ export default new DataSource({
     NotificationLogEntity,
     AuditLogEntity,
   ],
-  migrations: ['src/database/migrations/*.ts'],
+  migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
   synchronize: false,
 });

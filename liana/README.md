@@ -78,3 +78,44 @@ TypeORM data source: `packages/backend/src/database/data-source.ts`
 - `DB_SYNC=true` is for development only; use migrations in production.
 - Offline punch queue is implemented client-side and auto-syncs when online.
 - Add PDF/Excel exports in next phase via worker jobs.
+
+## Hostinger VPS Deployment
+
+This repo can be deployed to Hostinger on a VPS or cloud VPS using Docker.
+
+### Files added for production
+
+- `Dockerfile.backend`
+- `Dockerfile.frontend`
+- `docker-compose.prod.yml`
+- `deploy/nginx/default.conf`
+- `.env.production.example`
+
+### Deployment steps
+
+1. Provision a Hostinger VPS with Docker and the Docker Compose plugin installed.
+2. Copy the repo to the server.
+3. Create a production env file:
+
+```bash
+cp .env.production.example .env.production
+```
+
+4. Update secrets and database passwords in `.env.production`.
+5. Start the stack:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+The backend container runs database migrations automatically before app startup,
+so schema updates are applied during deployment.
+
+6. Open port `80` in the VPS firewall.
+
+### Important production notes
+
+- The frontend is served by Nginx and proxies `/api` and `/socket.io` to the backend.
+- The frontend and backend run on the same origin by default in production.
+- Keep `DB_SYNC=false` in production and let migrations manage schema changes.
+- For HTTPS, terminate TLS at Nginx on the VPS or place the VPS behind Cloudflare.

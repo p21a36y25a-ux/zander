@@ -2,13 +2,16 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
+import { PublicController } from './public.controller';
 import {
+  AdminSubcategoryEntryEntity,
   AttendanceEntity,
   AuditLogEntity,
   DepartmentEntity,
   EmployeeEntity,
   LeaveRequestEntity,
   LeaveTypeEntity,
+  MunicipalityEntity,
   NotificationLogEntity,
   PayrollPeriodEntity,
   PayrollRecordEntity,
@@ -23,6 +26,7 @@ import { PunchesModule } from './punches/punches.module';
 import { LeavesModule } from './leaves/leaves.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AdminConfigModule } from './admin-config/admin-config.module';
 
 @Module({
   imports: [
@@ -47,15 +51,18 @@ import { NotificationsModule } from './notifications/notifications.module';
           AttendanceEntity,
           LeaveTypeEntity,
           LeaveRequestEntity,
+          MunicipalityEntity,
           PayrollPeriodEntity,
           PayrollRecordEntity,
           NotificationLogEntity,
           AuditLogEntity,
+          AdminSubcategoryEntryEntity,
         ],
         synchronize: configService.get<string>('DB_SYNC', 'false') === 'true',
         logging: false,
       }),
     }),
+    TypeOrmModule.forFeature([EmployeeEntity]),
     UsersModule,
     AuthModule,
     EmployeesModule,
@@ -64,8 +71,9 @@ import { NotificationsModule } from './notifications/notifications.module';
     LeavesModule,
     PayrollModule,
     NotificationsModule,
+    AdminConfigModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, PublicController],
   providers: [],
 })
 export class AppModule {}
