@@ -2123,7 +2123,7 @@ function App() {
         <header className="rounded-2xl border border-amber-100/70 bg-white/75 p-6 shadow-xl shadow-amber-100/60 backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="font-serif text-3xl font-semibold tracking-tight">Liana Paneli i Punes</h1>
+              <h1 className="font-serif text-3xl font-semibold tracking-tight">Paneli i Punes</h1>
               <p className="text-sm text-slate-600">{formatDateTimeDisplay(clock.toDate())}</p>
             </div>
             <div className="rounded-xl bg-amber-900 px-4 py-2 text-sm text-amber-50">
