@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EmployeeEntity, PunchType } from './common/entities';
@@ -25,6 +25,11 @@ export class PublicController {
     });
   }
 
+  @Get('branches/:branchName/employees')
+  listBranchEmployees(@Param('branchName') branchName: string) {
+    return this.punchesService.listPublicEmployeesByBranch(branchName);
+  }
+
   @Post('check-in')
   checkIn(
     @Body()
@@ -33,10 +38,22 @@ export class PublicController {
       photoBase64?: string;
     },
   ) {
-    return this.punchesService.create({
+    return this.punchesService.createPublicAction({
       employeeId: payload.employeeId,
-      type: PunchType.CHECK_IN,
+      action: PunchType.CHECK_IN,
       photoBase64: payload.photoBase64,
     });
+  }
+
+  @Post('work-action')
+  workAction(
+    @Body()
+    payload: {
+      employeeId: string;
+      action: PunchType;
+      photoBase64?: string;
+    },
+  ) {
+    return this.punchesService.createPublicAction(payload);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { UserRole } from '@liana/shared';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -10,6 +10,12 @@ import { AttendanceService } from './attendance.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
+
+  @Get('me')
+  @Roles(UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN)
+  listMine(@Req() req: { user: { id: string } }) {
+    return this.attendanceService.listForUser(req.user.id);
+  }
 
   @Get()
   @Roles(UserRole.MANAGER, UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN)

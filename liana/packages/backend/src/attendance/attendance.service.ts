@@ -2,13 +2,15 @@ import { AttendanceStatus } from '@liana/shared';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AttendanceEntity, PunchType } from '../common/entities';
+import { AttendanceEntity, EmployeeEntity, PunchType } from '../common/entities';
 
 @Injectable()
 export class AttendanceService {
   constructor(
     @InjectRepository(AttendanceEntity)
     private readonly attendanceRepository: Repository<AttendanceEntity>,
+    @InjectRepository(EmployeeEntity)
+    private readonly employeeRepository: Repository<EmployeeEntity>,
   ) {}
 
   async updateFromPunch(employeeId: string, punchedAt: Date, type: PunchType) {
@@ -92,5 +94,14 @@ export class AttendanceService {
     );
 
     return [header.join(','), ...body].join('\n');
+  }
+
+  async listForUser(userId: string) {
+    const employee = await this.employeeRepository.findOne({ where: { userId } });
+    if (!employee) {
+      return [];
+    }
+
+    return this.list(employee.id);
   }
 }

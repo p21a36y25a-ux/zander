@@ -17,6 +17,9 @@ export class NotificationLogEntity {
   @Column({ type: 'text' })
   body!: string;
 
+  @Column({ nullable: true })
+  actionPath?: string;
+
   @Column({ default: 'queued' })
   status!: string;
 

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@liana/shared';
@@ -20,6 +21,12 @@ import { EmployeesService } from './employees.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
+
+  @Get('me')
+  @Roles(UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN)
+  me(@Req() req: { user: { id: string } }) {
+    return this.employeesService.findByUserId(req.user.id);
+  }
 
   @Get()
   @Roles(UserRole.MANAGER, UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN)

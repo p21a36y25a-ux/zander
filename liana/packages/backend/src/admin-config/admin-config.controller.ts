@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { UserRole } from '@liana/shared';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -26,5 +26,10 @@ export class AdminConfigController {
   @Post('subcategory-entries')
   saveSubcategoryEntry(@Body() dto: CreateSubcategoryEntryDto) {
     return this.adminConfigService.saveSubcategoryEntry(dto);
+  }
+
+  @Get('subcategory-entries')
+  getSubcategoryEntry(@Query('subcategory') subcategory: string) {
+    return this.adminConfigService.getSubcategoryEntry(subcategory);
   }
 }

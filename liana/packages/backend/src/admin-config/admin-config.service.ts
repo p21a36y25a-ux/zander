@@ -38,11 +38,26 @@ export class AdminConfigService {
     return this.municipalityRepo.save(entity);
   }
 
-  async saveSubcategoryEntry(dto: CreateSubcategoryEntryDto) {
-    const entry = this.subcategoryEntryRepo.create({
-      subcategory: dto.subcategory,
-      data: dto.data,
+  async getSubcategoryEntry(subcategory: string) {
+    return this.subcategoryEntryRepo.findOne({
+      where: { subcategory },
+      order: { updatedAt: 'DESC' },
     });
+  }
+
+  async saveSubcategoryEntry(dto: CreateSubcategoryEntryDto) {
+    const existing = await this.subcategoryEntryRepo.findOne({
+      where: { subcategory: dto.subcategory },
+      order: { updatedAt: 'DESC' },
+    });
+
+    const entry = existing
+      ? this.subcategoryEntryRepo.merge(existing, { data: dto.data })
+      : this.subcategoryEntryRepo.create({
+          subcategory: dto.subcategory,
+          data: dto.data,
+        });
+
     return this.subcategoryEntryRepo.save(entry);
   }
 }

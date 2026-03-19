@@ -58,7 +58,7 @@ export type PayrollBreakdown = {
 
 export type PunchEventPayload = {
   employeeId: string
-  type: 'check_in' | 'check_out'
+  type: 'check_in' | 'break_start' | 'break_end' | 'check_out'
   punchedAt: string
   photoUrl?: string | null
 }

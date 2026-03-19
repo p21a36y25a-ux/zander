@@ -10,6 +10,8 @@ import { EmployeeEntity } from './employee.entity';
 
 export enum PunchType {
   CHECK_IN = 'check_in',
+  BREAK_START = 'break_start',
+  BREAK_END = 'break_end',
   CHECK_OUT = 'check_out',
 }
 
@@ -27,7 +29,7 @@ export class PunchEntity {
   @JoinColumn({ name: 'employeeId' })
   employee!: EmployeeEntity;
 
-  @Column({ type: 'enum', enum: PunchType })
+  @Column({ type: 'varchar', length: 32 })
   type!: PunchType;
 
   @Column({ type: 'datetime' })

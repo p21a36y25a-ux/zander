@@ -16,6 +16,22 @@ type Employee = {
   employeeNumber?: string
   firstName: string
   lastName: string
+  birthDate?: string
+  country?: string
+  personalId?: string
+  address?: string
+  municipality?: string
+  tel?: string
+  maritalStatus?: string
+  education?: string
+  position?: string
+  emergencyContact?: string
+  familyConnection?: string
+  branchName?: string
+  annualLeaveEntitlement?: number
+  annualLeaveRemaining?: number
+  leaveBalanceYear?: number
+  hireDate?: string
   hourlyRateEur?: string
   userId?: string
   user?: {
@@ -37,8 +53,10 @@ type SystemUser = {
 type Punch = {
   id: string
   employeeId: string
-  type: 'check_in' | 'check_out'
+  type: 'check_in' | 'break_start' | 'break_end' | 'check_out'
   punchedAt: string
+  photoUrl?: string | null
+  source?: string
 }
 
 type AttendanceRow = {
@@ -47,6 +65,8 @@ type AttendanceRow = {
   date: string
   workedMinutes: number
   status: string
+  checkInAt?: string
+  checkOutAt?: string
 }
 
 type LeaveRequest = {
@@ -54,10 +74,20 @@ type LeaveRequest = {
   employeeId: string
   startDate: string
   endDate: string
+  totalDays?: number
   status: string
+  signedDocumentAvailable?: boolean
   reason?: string
   managerComment?: string | null
   hrComment?: string | null
+  employee?: {
+    firstName?: string
+    lastName?: string
+    employeeNumber?: string
+  }
+  leaveType?: {
+    name?: string
+  }
 }
 
 type PayrollRecord = {
@@ -96,7 +126,7 @@ type HrStore = {
   loadSystemUsers: () => Promise<void>
   createPunch: (payload: {
     employeeId: string
-    type: 'check_in' | 'check_out'
+    type: 'check_in' | 'break_start' | 'break_end' | 'check_out'
     photoBase64?: string
   }) => Promise<void>
   createLeave: (payload: {
@@ -122,7 +152,29 @@ type HrStore = {
     hireDate: string
     role: UserRole
   }) => Promise<void>
-  updateEmployee: (id: string, payload: { role?: UserRole; hourlyRateEur?: number }) => Promise<void>
+  updateEmployee: (id: string, payload: {
+    employeeNumber?: string
+    firstName?: string
+    lastName?: string
+    email?: string
+    birthDate?: string
+    country?: string
+    personalId?: string
+    address?: string
+    municipality?: string
+    tel?: string
+    maritalStatus?: string
+    education?: string
+    position?: string
+    emergencyContact?: string
+    familyConnection?: string
+    role?: UserRole
+    hourlyRateEur?: number
+    hireDate?: string
+    branchName?: string
+    annualLeaveEntitlement?: number
+    annualLeaveRemaining?: number
+  }) => Promise<void>
   removeEmployee: (id: string) => Promise<void>
   calculatePreview: (payload: { totalHours: number; hourlyRateEur: number }) => Promise<void>
   loadPayrollRecords: () => Promise<void>
@@ -157,7 +209,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
     } catch (err) {
       const message = axios.isAxiosError(err)
         ? String(err.response?.data?.message ?? err.message)
-        : 'Unable to login. Check API availability.'
+        : 'Nuk u arrit kycja. Kontrolloni nese API eshte i qasshem.'
       set({ loading: false, error: message })
     }
   },
@@ -189,7 +241,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const response = await api.get('/employees')
       set({ employees: response.data })
     } catch {
-      set({ error: 'Failed to load employees' })
+      set({ error: 'Deshtoi ngarkimi i punonjesve' })
     }
   },
 
@@ -198,7 +250,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const response = await api.get('/punches')
       set({ punches: response.data })
     } catch {
-      set({ error: 'Failed to load punches' })
+      set({ error: 'Deshtoi ngarkimi i hyrje/daljeve' })
     }
   },
 
@@ -207,7 +259,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const response = await api.get('/attendance')
       set({ attendance: response.data })
     } catch {
-      set({ error: 'Failed to load attendance' })
+      set({ error: 'Deshtoi ngarkimi i prezences' })
     }
   },
 
@@ -216,7 +268,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const response = await api.get('/leaves/requests')
       set({ leaveRequests: response.data })
     } catch {
-      set({ error: 'Failed to load leave requests' })
+      set({ error: 'Deshtoi ngarkimi i kerkesave per pushim' })
     }
   },
 
@@ -225,7 +277,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const response = await api.get('/users')
       set({ systemUsers: response.data })
     } catch {
-      set({ error: 'Failed to load system users' })
+      set({ error: 'Deshtoi ngarkimi i perdoruesve te sistemit' })
     }
   },
 
@@ -237,7 +289,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const pending = JSON.parse(localStorage.getItem('offline_punch_queue') ?? '[]') as unknown[]
       pending.push({ ...payload, queuedAt: new Date().toISOString() })
       localStorage.setItem('offline_punch_queue', JSON.stringify(pending))
-      set({ error: 'Offline or API unavailable. Punch queued for sync.' })
+      set({ error: 'Pa internet ose API jo e qasshme. Hyrje/dalja u ruajt per sinkronizim.' })
     }
   },
 
@@ -246,7 +298,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       await api.post('/leaves/requests', payload)
       await get().loadLeaves()
     } catch {
-      set({ error: 'Failed to create leave request' })
+      set({ error: 'Deshtoi krijimi i kerkeses per pushim' })
     }
   },
 
@@ -259,7 +311,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       })
       await get().loadLeaves()
     } catch {
-      set({ error: 'Failed to review leave request' })
+      set({ error: 'Deshtoi shqyrtimi i kerkeses per pushim' })
     }
   },
 
@@ -270,7 +322,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
     } catch (err) {
       const message = axios.isAxiosError(err)
         ? String(err.response?.data?.message ?? err.message)
-        : 'Failed to register user'
+        : 'Deshtoi regjistrimi i perdoruesit'
       set({ error: message })
     }
   },
@@ -280,7 +332,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       await api.patch(`/employees/${id}`, payload)
       await Promise.all([get().loadEmployees(), get().loadSystemUsers()])
     } catch {
-      set({ error: 'Failed to update employee' })
+      set({ error: 'Deshtoi perditesimi i punonjesit' })
     }
   },
 
@@ -289,7 +341,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       await api.delete(`/employees/${id}`)
       await Promise.all([get().loadEmployees(), get().loadSystemUsers()])
     } catch {
-      set({ error: 'Failed to remove employee' })
+      set({ error: 'Deshtoi fshirja e punonjesit' })
     }
   },
 
@@ -298,7 +350,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const response = await api.post('/payroll/calculate-preview', payload)
       set({ payrollPreview: response.data })
     } catch {
-      set({ error: 'Failed to calculate payroll preview' })
+      set({ error: 'Deshtoi llogaritja e parashikimit te pages' })
     }
   },
 
@@ -307,7 +359,7 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const response = await api.get('/payroll/records')
       set({ payrollRecords: response.data })
     } catch {
-      set({ error: 'Failed to load payroll records' })
+      set({ error: 'Deshtoi ngarkimi i regjistrave te pagave' })
     }
   },
 
@@ -322,11 +374,11 @@ export const useHrStore = create<HrStore>((set, get) => ({
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'attendance-report.csv'
+      a.download = 'raporti-i-prezences.csv'
       a.click()
       window.URL.revokeObjectURL(url)
     } catch {
-      set({ error: 'Failed to export attendance CSV' })
+      set({ error: 'Deshtoi eksportimi i prezences ne CSV' })
     }
   },
 

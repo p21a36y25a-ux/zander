@@ -48,6 +48,51 @@ export class EmployeeEntity {
   user!: UserEntity;
 
   @Column({ nullable: true })
+  birthDate?: string;
+
+  @Column({ nullable: true })
+  country?: string;
+
+  @Column({ nullable: true })
+  personalId?: string;
+
+  @Column({ nullable: true })
+  address?: string;
+
+  @Column({ nullable: true })
+  municipality?: string;
+
+  @Column({ nullable: true })
+  tel?: string;
+
+  @Column({ nullable: true })
+  maritalStatus?: string;
+
+  @Column({ nullable: true })
+  education?: string;
+
+  @Column({ nullable: true })
+  position?: string;
+
+  @Column({ nullable: true })
+  emergencyContact?: string;
+
+  @Column({ nullable: true })
+  familyConnection?: string;
+
+  @Column({ nullable: true, default: 'Prishtina' })
+  branchName?: string;
+
+  @Column({ type: 'int', default: 20 })
+  annualLeaveEntitlement!: number;
+
+  @Column({ type: 'int', default: 20 })
+  annualLeaveRemaining!: number;
+
+  @Column({ type: 'int', default: 2026 })
+  leaveBalanceYear!: number;
+
+  @Column({ nullable: true })
   departmentId?: string;
 
   @ManyToOne(() => DepartmentEntity, (department) => department.employees, {
